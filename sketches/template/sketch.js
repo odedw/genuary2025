@@ -1,17 +1,24 @@
-// constants
+/// <reference types="p5/global" />
 
-// locals
-
+let lfo1;
 function setup() {
   createCanvas(700, 700);
   stroke(255);
   rectMode(CENTER);
-  // pixelDensity(1);
-  //   background(0);
+  lfo1 = createLfo({
+    waveform: LfoWaveform.Sine,
+    frequency: Timing.frames(120),
+    min: -PI,
+    max: PI,
+  });
+  //   background(0);H
 }
 
 function draw() {
   background(0);
+  translate(width / 2, height / 2);
+  rotate(lfo1.value);
+  rect(0, 0, 100, 100);
 }
 
 let isLooping = true;
