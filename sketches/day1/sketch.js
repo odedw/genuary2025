@@ -1,7 +1,7 @@
 /// <reference types="p5/global" />
 
-// Configuration
-const CONFIG = {
+// configuration
+const config = {
   resolution: 150,
   width: 700,
   height: 700,
@@ -10,7 +10,7 @@ const CONFIG = {
   spiralRotations: 4,
 };
 
-const squareSize = CONFIG.width / CONFIG.resolution;
+const squareSize = config.width / config.resolution;
 
 // Cell class definition
 class Cell {
@@ -41,13 +41,13 @@ function calculateSpiralValue(point, centerX, centerY) {
     (Math.atan2(point.y - centerY, point.x - centerX) + Math.PI) /
     (2 * Math.PI);
   const distance =
-    dist(point.x, point.y, centerX, centerY) / (CONFIG.width / 2);
-  return angle + distance * CONFIG.spiralRotations;
+    dist(point.x, point.y, centerX, centerY) / (config.width / 2);
+  return angle + distance * config.spiralRotations;
 }
 
 function sortCells() {
-  const centerX = CONFIG.width / 2;
-  const centerY = CONFIG.height / 2;
+  const centerX = config.width / 2;
+  const centerY = config.height / 2;
 
   cells.sort((a, b) => {
     const spiralA = calculateSpiralValue(a.dest, centerX, centerY);
@@ -71,7 +71,7 @@ function setInitialPositions() {
   cells.forEach((cell) => {
     cell.start.set(x, y);
     x += squareSize;
-    if (x > CONFIG.width) {
+    if (x > config.width) {
       x = squareSize / 2;
       y += squareSize;
     }
@@ -80,20 +80,20 @@ function setInitialPositions() {
 
 // p5.js functions
 function preload() {
-  sourceImage = loadImage(CONFIG.imagePath);
+  sourceImage = loadImage(config.imagePath);
 }
 
 function setup() {
-  createCanvas(CONFIG.width, CONFIG.height);
+  createCanvas(config.width, config.height);
   rectMode(CENTER);
   noStroke();
 
   // Create buffer and process image
-  const buffer = createGraphics(CONFIG.width, CONFIG.height);
-  buffer.image(sourceImage, 0, 0, CONFIG.width, CONFIG.height);
+  const buffer = createGraphics(config.width, config.height);
+  buffer.image(sourceImage, 0, 0, config.width, config.height);
 
   // Initialize animation timer
-  t1 = Timing.frames(CONFIG.numFrames, {
+  t1 = Timing.frames(config.numFrames, {
     loop: false,
     autoTrigger: true,
     easing: Easing.EaseInOutCubic,
