@@ -1,5 +1,5 @@
 /// <reference types="p5/global" />
-
+const SHOULD_RECORD = false;
 // configuration
 const config = {
   resolution: 150,
@@ -12,7 +12,6 @@ const config = {
 
 const squareSize = config.width / config.resolution;
 
-// Cell class definition
 class Cell {
   constructor(x, y, color) {
     this.dest = createVector(x, y);
@@ -29,7 +28,6 @@ class Cell {
   }
 }
 
-// State variables
 let cells = [];
 let sourceImage;
 let t1;
@@ -106,6 +104,12 @@ function setup() {
 }
 
 function draw() {
+  if (SHOULD_RECORD && frameCount === 1) {
+    const capture = P5Capture.getInstance();
+    capture.start({
+      duration: config.numFrames * 2,
+    });
+  }
   background(0);
   cells.forEach((cell) => cell.draw());
 
@@ -118,4 +122,19 @@ function draw() {
 function mouseClicked() {
   isLooping = !isLooping;
   isLooping ? loop() : noLoop();
+}
+
+if (SHOULD_RECORD) {
+  P5Capture.setDefaultOptions({
+    format: "mp4",
+    framerate: 60,
+    quality: 1,
+    bitrate: 1000000,
+    width: config.width,
+    height: config.height,
+  });
+} else {
+  P5Capture.setDefaultOptions({
+    disableUi: true,
+  });
 }

@@ -1,8 +1,14 @@
 /// <reference types="p5/global" />
+const SHOULD_RECORD = false;
+
+const config = {
+  width: 700,
+  height: 700,
+};
 
 let lfo1;
 function setup() {
-  createCanvas(700, 700);
+  createCanvas(config.width, config.height);
   stroke(255);
   rectMode(CENTER);
   lfo1 = createLfo({
@@ -11,10 +17,16 @@ function setup() {
     min: -PI,
     max: PI,
   });
-  //   background(0);H
+  //   background(0);
 }
 
 function draw() {
+  if (SHOULD_RECORD && frameCount === 1) {
+    const capture = P5Capture.getInstance();
+    capture.start({
+      duration: 120,
+    });
+  }
   background(0);
   translate(width / 2, height / 2);
   rotate(lfo1.value);
@@ -23,11 +35,21 @@ function draw() {
 
 let isLooping = true;
 function mouseClicked() {
-  if (isLooping) {
-    noLoop();
-  } else {
-    loop();
-  }
-
   isLooping = !isLooping;
+  isLooping ? loop() : noLoop();
+}
+
+if (SHOULD_RECORD) {
+  P5Capture.setDefaultOptions({
+    format: "mp4",
+    framerate: 60,
+    quality: 1,
+    bitrate: 1000000,
+    width: config.width,
+    height: config.height,
+  });
+} else {
+  P5Capture.setDefaultOptions({
+    disableUi: true,
+  });
 }
