@@ -4,6 +4,10 @@ const SHOULD_RECORD = false;
 const config = {
   width: 700,
   height: 700,
+  record: {
+    shouldRecord: false,
+    duration: 120,
+  },
 };
 
 let lfo1;
@@ -21,10 +25,10 @@ function setup() {
 }
 
 function draw() {
-  if (SHOULD_RECORD && frameCount === 1) {
+  if (config.record.shouldRecord && frameCount === 1) {
     const capture = P5Capture.getInstance();
     capture.start({
-      duration: 120,
+      duration: config.record.duration,
     });
   }
   background(0);
@@ -39,7 +43,7 @@ function mouseClicked() {
   isLooping ? loop() : noLoop();
 }
 
-if (SHOULD_RECORD) {
+if (config.record.shouldRecord) {
   P5Capture.setDefaultOptions({
     format: "mp4",
     framerate: 60,

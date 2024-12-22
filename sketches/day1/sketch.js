@@ -1,130 +1,141 @@
 /// <reference types="p5/global" />
-const SHOULD_RECORD = false;
-// configuration
 const config = {
-  resolution: 150,
   width: 700,
   height: 700,
-  numFrames: 180,
-  imagePath: "/public/images/day-1-sandwich-1.jpeg",
-  spiralRotations: 4,
+  record: {
+    shouldRecord: false,
+    duration: 60 * 15,
+  },
+  numberOfParticles: 100,
+  strokeWeight: {
+    min: 2,
+    max: 15,
+  },
+  chanceToSwitchDirection: 0.07,
+  chanceToHorizontal: 0.5,
+  speed: {
+    min: 1,
+    max: 1,
+  },
 };
 
-const squareSize = config.width / config.resolution;
+class Particle {
+  constructor(x, y, speed, color) {
+    this.pos = createVector(x, y);
+    this.prevPositions = [this.pos.copy()];
+    this.lfo1 = createLfo({
+      waveform: LfoWaveform.Sine,
+      frequency: Timing.frames(int(random(120, 180))),
+      min: config.strokeWeight.min,
+      max: config.strokeWeight.max,
+    });
+    this.lfo2 = createLfo({
+      waveform: LfoWaveform.Sine,
+      frequency: Timing.frames(int(random(120, 180))),
+      min: 0,
+      max: 1,
+    });
 
-class Cell {
-  constructor(x, y, color) {
-    this.dest = createVector(x, y);
-    this.start = createVector(x, y);
+    // Randomly choose either horizontal or vertical movement
+    if (random() < config.chanceToHorizontal) {
+      // Horizontal movement: random direction (-1 or 1)
+      this.vel = createVector(random() < 0.5 ? -speed : speed, 0);
+    } else {
+      // Vertical movement: random direction (-1 or 1)
+      this.vel = createVector(0, random() < 0.5 ? -speed : speed);
+    }
+
     this.color = color;
+    this.maxTrailLength = 50; // Adjust this to control trail length
+  }
+
+  update() {
+    if (random() < globalLfo1.value) {
+      const speed = this.vel.mag(); // preserve current speed
+      if (this.vel.x === 0) {
+        // Currently moving vertically, switch to horizontal
+        this.vel = createVector(random() < 0.5 ? -speed : speed, 0);
+      } else {
+        // Currently moving horizontally, switch to vertical
+        this.vel = createVector(0, random() < 0.5 ? -speed : speed);
+      }
+    }
+
+    // Update position based on velocity
+    this.pos.add(this.vel);
+
+    // Store current position in trail
+    this.prevPositions.push(this.pos.copy());
+
+    // Remove oldest position if trail is too long
+    if (this.prevPositions.length > this.maxTrailLength) {
+      this.prevPositions.shift();
+    }
   }
 
   draw() {
-    fill(this.color);
-    const source = direction === 1 ? this.start : this.dest;
-    const target = direction === 1 ? this.dest : this.start;
-    const pos = source.copy().lerp(target, t1.elapsed);
-    rect(pos.x, pos.y, squareSize, squareSize);
+    if (this.prevPositions.length < 2) return;
+
+    // Draw line for the most recent segment
+    const lastIdx = this.prevPositions.length - 1;
+    strokeWeight(this.lfo1.value);
+    stroke(this.color);
+    line(
+      this.prevPositions[lastIdx - 1].x,
+      this.prevPositions[lastIdx - 1].y,
+      this.prevPositions[lastIdx].x,
+      this.prevPositions[lastIdx].y
+    );
   }
 }
 
-let cells = [];
-let sourceImage;
-let t1;
-let direction = 1;
-let isLooping = true;
-
-function calculateSpiralValue(point, centerX, centerY) {
-  const angle =
-    (Math.atan2(point.y - centerY, point.x - centerX) + Math.PI) /
-    (2 * Math.PI);
-  const distance =
-    dist(point.x, point.y, centerX, centerY) / (config.width / 2);
-  return angle + distance * config.spiralRotations;
-}
-
-function sortCells() {
-  const centerX = config.width / 2;
-  const centerY = config.height / 2;
-
-  cells.sort((a, b) => {
-    const spiralA = calculateSpiralValue(a.dest, centerX, centerY);
-    const spiralB = calculateSpiralValue(b.dest, centerX, centerY);
-    return spiralA - spiralB;
-  });
-}
-
-function initializeCellGrid(buffer) {
-  for (let x = squareSize / 2; x < buffer.width; x += squareSize) {
-    for (let y = squareSize / 2; y < buffer.height; y += squareSize) {
-      cells.push(new Cell(x, y, buffer.get(x, y)));
-    }
-  }
-}
-
-function setInitialPositions() {
-  let x = squareSize / 2;
-  let y = squareSize / 2;
-
-  cells.forEach((cell) => {
-    cell.start.set(x, y);
-    x += squareSize;
-    if (x > config.width) {
-      x = squareSize / 2;
-      y += squareSize;
-    }
-  });
-}
-
-// p5.js functions
-function preload() {
-  sourceImage = loadImage(config.imagePath);
-}
-
+let globalLfo1;
+let particles = [];
 function setup() {
+  randomPalette();
   createCanvas(config.width, config.height);
-  rectMode(CENTER);
-  noStroke();
-
-  // Create buffer and process image
-  const buffer = createGraphics(config.width, config.height);
-  buffer.image(sourceImage, 0, 0, config.width, config.height);
-
-  // Initialize animation timer
-  t1 = Timing.frames(config.numFrames, {
-    loop: false,
-    autoTrigger: true,
-    easing: Easing.EaseInOutCubic,
+  frameRate(60);
+  for (let i = 0; i < config.numberOfParticles; i++) {
+    particles.push(
+      new Particle(
+        random(width),
+        random(height),
+        random(config.speed.min, config.speed.max),
+        random(PALETTE)
+      )
+    );
+  }
+  strokeWeight(config.strokeWeight);
+  background(0);
+  globalLfo1 = createLfo({
+    waveform: LfoWaveform.Square,
+    frequency: Timing.frames(360),
+    min: 0,
+    max: 0.3,
   });
-
-  // Setup cells
-  initializeCellGrid(buffer);
-  sortCells();
-  setInitialPositions();
 }
 
 function draw() {
-  if (SHOULD_RECORD && frameCount === 1) {
+  if (config.record.shouldRecord && frameCount === 1) {
     const capture = P5Capture.getInstance();
     capture.start({
-      duration: config.numFrames * 2,
+      duration: config.record.duration,
     });
   }
-  background(0);
-  cells.forEach((cell) => cell.draw());
-
-  if (t1.finished) {
-    direction *= -1;
-    t1.reset();
+  // background(0);
+  for (let i = 0; i < particles.length; i++) {
+    particles[i].update();
+    particles[i].draw();
   }
 }
 
+let isLooping = true;
 function mouseClicked() {
   isLooping = !isLooping;
   isLooping ? loop() : noLoop();
 }
 
-if (SHOULD_RECORD) {
+if (config.record.shouldRecord) {
   P5Capture.setDefaultOptions({
     format: "mp4",
     framerate: 60,
