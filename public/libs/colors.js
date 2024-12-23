@@ -1,7 +1,7 @@
 let paletteName;
 paletteName = "Fans";
 
-// const cga = [#ff55ff, #55ffff, #ffffff];
+const cga = ["#ff55ff", "#55ffff", "#ffffff", "#000000"];
 const palettes = [
   {
     name: "Science",
@@ -282,12 +282,79 @@ const palettes = [
   },
 ];
 
+const palettes2 = [
+  {
+    name: "Neon",
+    colors: ["#FF10F0", "#7F00FF", "#00FF9F", "#00FFE1", "#000000"],
+  },
+  {
+    name: "Desert",
+    colors: ["#FF7B4B", "#FFB384", "#FFF4E4", "#8C4E37", "#573729", "#1A0F0C"],
+  },
+  {
+    name: "Cyberpunk",
+    colors: ["#FF00FF", "#00FFFF", "#FF355E", "#14F2B9", "#0D0D0D", "#471CA8"],
+  },
+  {
+    name: "Forest",
+    colors: ["#1B4B36", "#2D7A4D", "#5CB270", "#98D4BB", "#D5ECD4", "#412F1C"],
+  },
+  {
+    name: "Memphis",
+    colors: ["#FFD800", "#00A8C6", "#FF5714", "#40204C", "#8AD8D1", "#FF9E14"],
+  },
+  {
+    name: "Vapor",
+    colors: ["#FF71CE", "#01CDFE", "#05FFA1", "#B967FF", "#FFFB96"],
+  },
+  {
+    name: "Nordic",
+    colors: ["#4C566A", "#81A1C1", "#EBCB8B", "#D8DEE9", "#2E3440", "#BF616A"],
+  },
+  {
+    name: "Retro80s",
+    colors: ["#FF1493", "#4169E1", "#00FFFF", "#FFD700", "#FF4500", "#191919"],
+  },
+  {
+    name: "Brutalist",
+    colors: ["#1A1A1A", "#404040", "#8C8C8C", "#BFBFBF", "#F2F2F2", "#FF3333"],
+  },
+  {
+    name: "Pastel",
+    colors: ["#FFB3BA", "#BAFFC9", "#BAE1FF", "#FFFFBA", "#FFB3F7", "#E0E0E0"],
+  },
+];
+
+const monochromePalettes = [
+  palettes.find((p) => p.name === "Cube"),
+  palettes.find((p) => p.name === "Wave"),
+  palettes.find((p) => p.name === "Flat"),
+  palettes.find((p) => p.name === "Her"),
+  palettes.find((p) => p.name === "Cheddar"),
+];
+
 let PALETTE;
 function randomPalette() {
   let p = palettes[Math.floor(Math.random() * palettes.length)];
   PALETTE = p.colors;
   console.log("PALETTE", p.name);
+  return p.colors;
 }
+
+function randomMonochromePalette() {
+  let p =
+    monochromePalettes[Math.floor(Math.random() * monochromePalettes.length)];
+  PALETTE = p.colors;
+  console.log("PALETTE", p.name);
+}
+
+function randomPalette2() {
+  let p = palettes2[Math.floor(Math.random() * palettes2.length)];
+  PALETTE = p.colors;
+  console.log("PALETTE", p.name);
+  return p.colors;
+}
+
 function setPalette(name) {
   paletteName = name;
   PALETTE = palettes.find((p) => p.name === name).colors;
@@ -297,6 +364,11 @@ if (paletteName) {
   PALETTE = palettes.find((p) => p.name == paletteName).colors;
 } else {
   randomPalette();
+}
+
+function setPalette2(name) {
+  PALETTE = palettes2.find((p) => p.name == name).colors;
+  console.log("PALETTE", name);
 }
 
 function randomColorForSeed(obj) {
