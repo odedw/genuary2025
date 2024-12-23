@@ -1,6 +1,4 @@
 /// <reference types="p5/global" />
-const SHOULD_RECORD = false;
-
 const config = {
   width: 700,
   height: 700,
