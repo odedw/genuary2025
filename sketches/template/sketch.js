@@ -5,9 +5,10 @@
 const config = {
   width: 700,
   height: 700,
+  fps: 60,
   record: {
     shouldRecord: false,
-    duration: 120,
+    duration: 60,
   },
 };
 
@@ -19,6 +20,7 @@ let lfo1;
 
 function setup() {
   createCanvas(config.width, config.height);
+  frameRate(config.fps);
   stroke(255);
   rectMode(CENTER);
   lfo1 = createLfo({
@@ -36,7 +38,7 @@ function draw() {
   if (config.record.shouldRecord && frameCount === 1) {
     const capture = P5Capture.getInstance();
     capture.start({
-      duration: config.record.duration,
+      duration: config.record.duration * config.fps,
     });
   }
   background(0);
@@ -56,7 +58,7 @@ function mouseClicked() {
 if (config.record.shouldRecord) {
   P5Capture.setDefaultOptions({
     format: "mp4",
-    framerate: 60,
+    framerate: config.fps,
     quality: 1,
     bitrate: 1000000,
     width: config.width,
