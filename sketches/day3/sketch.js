@@ -1,82 +1,83 @@
 /// <reference types="p5/global" />
-const config = { width: 700, height: 700, record: { shouldRecord: false, duration: 120 }, cellSize: 70, particleSize: 20, numberOfParticles: 10 };
+const config = { width: 700, height: 700, record: { shouldRecord: false, duration: 120 }, cellSize: 70, noiseMultiplier: 7, speed: 15, particleSize: 10 };
 
-// Create engine with improved simulation parameters
-let engine = Matter.Engine.create({ positionIterations: 8, velocityIterations: 8 });
-randomPalette();
 class Particle {
   constructor(x, y) {
-    this.body = Matter.Bodies.circle(x, y, config.particleSize / 2, {
-      restitution: 0.8,
-    });
-    this.color = random(PALETTE);
-    Matter.Composite.add(engine.world, this.body);
+    this.pos = createVector(x, y);
+    this.velocity = createVector(random(-config.speed, config.speed), random(-config.speed, config.speed));
+  }
+
+  update() {
+    this.pos.add(this.velocity);
+    return this.pos.x <= width && this.pos.x >= 0 && this.pos.y <= height && this.pos.y >= 0;
   }
 
   draw() {
-    fill(this.color);
-    noStroke();
-    ellipse(this.body.position.x, this.body.position.y, config.particleSize, config.particleSize);
+    fill(255);
+    ellipse(this.pos.x, this.pos.y, config.particleSize);
   }
 }
 
 class Cell {
   constructor(x, y) {
-    this.orientation = random() > 0.5 ? 1 : -1;
-    this.a = (PI / 4) * this.orientation;
-    this.body = Matter.Bodies.rectangle(x + config.cellSize / 2, y + config.cellSize / 2, 5, sqrt(2 * config.cellSize * config.cellSize), { angle: this.a, isStatic: true, friction: 0.1 });
-    this.h = sqrt(2 * config.cellSize * config.cellSize);
-    Matter.Composite.add(engine.world, this.body);
-    this.timer = Timing.frames(120, { loop: false, autoTrigger: false });
+    this.x = x;
+    this.y = y;
+    this.c = random(PALETTE);
   }
 
+  update() {}
+
   draw() {
-    this.body.angle = this.a - this.orientation * PI * this.timer.elapsed;
-    if (this.timer.finished) {
-      this.timer.reset();
-      this.orientation = -this.orientation;
-      this.a = this.body.angle;
-    }
-    if (random() < 0.0005 && !this.timer.active) {
-      this.timer.activate();
-    }
-    const pos = this.body.position;
-    const angle = this.body.angle;
-    push();
-    fill(255);
-    translate(pos.x, pos.y);
-    rotate(angle);
-    rect(0, 0, 1, this.h);
-    pop();
+    fill(this.c);
+    beginShape();
+    const numberOfParticles = particles.filter((particle) => dist(particle.pos.x, particle.pos.y, this.x, this.y) < config.cellSize).length;
+    const d = numberOfParticles * config.noiseMultiplier;
+    vertex(this.x - config.cellSize * 0.25 - random(d), this.y - config.cellSize * 0.25 - random(d));
+    vertex(this.x - config.cellSize * 0.25 - random(d), this.y + config.cellSize * 0.25 + random(d));
+    vertex(this.x + config.cellSize * 0.25 + random(d), this.y + config.cellSize * 0.25 + random(d));
+    vertex(this.x + config.cellSize * 0.25 + random(d), this.y - config.cellSize * 0.25 - random(d));
+    endShape(CLOSE);
   }
 }
 
-const objects = [];
+const cells = [];
+const particles = [];
+let timer;
+
+//=================Setup=============================
 
 function setup() {
   createCanvas(config.width, config.height);
-  fill(255);
+  frameRate(10);
   noStroke();
   rectMode(CENTER);
 
   for (let x = 0; x < width; x += config.cellSize) {
     for (let y = 0; y < height; y += config.cellSize) {
-      objects.push(new Cell(x, y, config.cellSize));
+      cells.push(new Cell(x + config.cellSize / 2, y + config.cellSize / 2));
     }
-  }
-  for (let i = 0; i < config.numberOfParticles; i++) {
-    objects.push(new Particle(random(width), random(height)));
   }
 }
 
+//=================Draw=============================
+
 function draw() {
-  // background(0, 0, 0, 20);
+  if (frameCount % 3 === 0) {
+    particles.push(new Particle(random(width), random(height)));
+  }
   background(0);
-  Matter.Engine.update(engine);
-  objects.forEach((object) => {
-    object.draw();
+  cells.forEach((cell) => {
+    cell.update();
+    cell.draw();
   });
+  for (let i = particles.length - 1; i >= 0; i--) {
+    if (!particles[i].update()) {
+      particles.splice(i, 1);
+    }
+  }
 }
+
+//================Record=============================
 
 if (config.record.shouldRecord) {
   P5Capture.setDefaultOptions({

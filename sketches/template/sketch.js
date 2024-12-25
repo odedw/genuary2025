@@ -1,4 +1,7 @@
 /// <reference types="p5/global" />
+
+//=================Config=============================
+
 const config = {
   width: 700,
   height: 700,
@@ -8,7 +11,12 @@ const config = {
   },
 };
 
+//=================Variables=============================
+
 let lfo1;
+
+//=================Setup=============================
+
 function setup() {
   createCanvas(config.width, config.height);
   stroke(255);
@@ -22,6 +30,8 @@ function setup() {
   //   background(0);
 }
 
+//=================Draw=============================
+
 function draw() {
   if (config.record.shouldRecord && frameCount === 1) {
     const capture = P5Capture.getInstance();
@@ -34,6 +44,8 @@ function draw() {
   rotate(lfo1.value);
   rect(0, 0, 100, 100);
 }
+
+//=================Record=============================
 
 let isLooping = true;
 function mouseClicked() {

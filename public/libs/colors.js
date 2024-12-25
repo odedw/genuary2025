@@ -380,3 +380,5 @@ function randomColorForSeed(obj) {
   const index = floor(random(PALETTE.length));
   return PALETTE[index];
 }
+
+randomPalette();
