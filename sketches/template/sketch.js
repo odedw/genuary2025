@@ -12,9 +12,12 @@ const config = {
   },
 };
 
+//=================Classes=============================
+
 //=================Variables=============================
 
 let lfo1;
+let center;
 
 //=================Setup=============================
 
@@ -23,6 +26,8 @@ function setup() {
   frameRate(config.fps);
   stroke(255);
   rectMode(CENTER);
+  center = createVector(width / 2, height / 2);
+
   lfo1 = createLfo({
     waveform: LfoWaveform.Sine,
     frequency: Timing.frames(120),
