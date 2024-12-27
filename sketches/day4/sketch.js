@@ -6,7 +6,7 @@ const config = {
   width: 700,
   height: 700,
   fps: 60,
-  lightSourceSpeed: 3,
+  timerSeconds: 5,
   numberOfRays: 5000, // One ray per degree
   rayLength: 2000, // Length of rays
   rectWidth: 200,
@@ -99,6 +99,7 @@ let rays = [];
 let rectangles = [];
 let center;
 let lightSourceVelocity;
+let timer;
 //=================Setup=============================
 
 function setup() {
@@ -108,7 +109,12 @@ function setup() {
   center = createVector(width / 2, height / 2);
   // Create light source at center
   lightSource = createVector(1, 1);
-  lightSourceVelocity = createVector(config.lightSourceSpeed, 0);
+  lightSourceVelocity = createVector(1, 0);
+  timer = Timing.seconds(config.timerSeconds, {
+    loop: false,
+    easing: Easing.EaseInOutQuad,
+  });
+
   // Create rays
   for (let a = 0; a < 360; a += 360 / config.numberOfRays) {
     rays.push(new Ray(lightSource, radians(a)));
@@ -168,22 +174,35 @@ function draw() {
 
   background(0);
 
-  lightSource.add(lightSourceVelocity);
-  if (lightSource.x >= width && lightSourceVelocity.x > 0) {
-    lightSource = createVector(width, 1);
-    lightSourceVelocity = createVector(0, config.lightSourceSpeed);
-  } else if (lightSource.x <= 1 && lightSourceVelocity.x < 0) {
-    lightSource = createVector(1, height);
-    lightSourceVelocity = createVector(0, -config.lightSourceSpeed);
-  } else if (lightSource.y >= height && lightSourceVelocity.y > 0) {
-    lightSource = createVector(width, height);
-    lightSourceVelocity = createVector(-config.lightSourceSpeed, 0);
-  } else if (lightSource.y <= 1 && lightSourceVelocity.y < 0) {
-    lightSource = createVector(1, 1);
-    lightSourceVelocity = createVector(config.lightSourceSpeed, 0);
+  if (lightSourceVelocity.x > 0) {
+    lightSource.x = constrain(timer.elapsed * width, 1, width);
+    if (lightSource.x >= width) {
+      lightSource = createVector(width, 1);
+      lightSourceVelocity = createVector(0, 1);
+      timer.reset();
+    }
+  } else if (lightSourceVelocity.y > 0) {
+    lightSource.y = constrain(timer.elapsed * height, 1, height);
+    if (lightSource.y >= height) {
+      lightSource = createVector(width, height);
+      lightSourceVelocity = createVector(-1, 0);
+      timer.reset();
+    }
+  } else if (lightSourceVelocity.x < 0) {
+    lightSource.x = constrain(width - timer.elapsed * width, 1, width);
+    if (lightSource.x <= 1) {
+      lightSource = createVector(1, height);
+      lightSourceVelocity = createVector(0, -1);
+      timer.reset();
+    }
+  } else if (lightSourceVelocity.y < 0) {
+    lightSource.y = constrain(height - timer.elapsed * height, 1, height);
+    if (lightSource.y <= 1) {
+      lightSource = createVector(1, 1);
+      lightSourceVelocity = createVector(1, 0);
+      timer.reset();
+    }
   }
-
-  console.log(lightSource.x, lightSource.y);
 
   // Update ray positions
   rays.forEach((ray) => {
