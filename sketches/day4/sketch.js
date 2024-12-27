@@ -6,12 +6,13 @@ const config = {
   width: 700,
   height: 700,
   fps: 60,
-  timerSeconds: 5,
-  numberOfRays: 5000, // One ray per degree
-  rayLength: 2000, // Length of rays
+  timerSeconds: 3,
+  numberOfRays: 5000,
+  rayLength: 2000,
   rectWidth: 200,
   rectHeight: 30,
-  rectGap: 50,
+  rectGap: 70,
+  centerCircleRadius: 200,
   record: {
     shouldRecord: false,
     duration: 60,
@@ -27,16 +28,14 @@ class Ray {
   }
 
   cast(wall) {
-    // Line-line intersection algorithm
-    const x1 = wall.a.x;
-    const y1 = wall.a.y;
-    const x2 = wall.b.x;
-    const y2 = wall.b.y;
-
-    const x3 = this.pos.x;
-    const y3 = this.pos.y;
-    const x4 = this.pos.x + this.dir.x;
-    const y4 = this.pos.y + this.dir.y;
+    const x1 = wall.a.x,
+      y1 = wall.a.y,
+      x2 = wall.b.x,
+      y2 = wall.b.y;
+    const x3 = this.pos.x,
+      y3 = this.pos.y;
+    const x4 = this.pos.x + this.dir.x,
+      y4 = this.pos.y + this.dir.y;
 
     const den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
     if (den === 0) return null;
@@ -45,10 +44,7 @@ class Ray {
     const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / den;
 
     if (t > 0 && t < 1 && u > 0) {
-      const pt = createVector();
-      pt.x = x1 + t * (x2 - x1);
-      pt.y = y1 + t * (y2 - y1);
-      return pt;
+      return createVector(x1 + t * (x2 - x1), y1 + t * (y2 - y1));
     }
     return null;
   }
@@ -72,20 +68,15 @@ class Rectangle {
     this.y = y;
     this.w = w;
     this.h = h;
-    this.boundaries = this.createBoundaries();
-  }
-
-  createBoundaries() {
-    return [
-      new Boundary(this.x, this.y, this.x + this.w, this.y), // Top
-      new Boundary(this.x + this.w, this.y, this.x + this.w, this.y + this.h), // Right
-      new Boundary(this.x + this.w, this.y + this.h, this.x, this.y + this.h), // Bottom
-      new Boundary(this.x, this.y + this.h, this.x, this.y), // Left
+    this.boundaries = [
+      new Boundary(x, y, x + w, y),
+      new Boundary(x + w, y, x + w, y + h),
+      new Boundary(x + w, y + h, x, y + h),
+      new Boundary(x, y + h, x, y),
     ];
   }
 
   draw() {
-    // stroke(255);
     noStroke();
     noFill();
     rect(this.x, this.y, this.w, this.h);
@@ -110,7 +101,7 @@ function setup() {
   // Create light source at center
   lightSource = createVector(1, 1);
   lightSourceVelocity = createVector(1, 0);
-  timer = Timing.seconds(config.timerSeconds, {
+  timer = Timing.frames(config.fps * config.timerSeconds, {
     loop: false,
     easing: Easing.EaseInOutQuad,
   });
@@ -119,47 +110,19 @@ function setup() {
   for (let a = 0; a < 360; a += 360 / config.numberOfRays) {
     rays.push(new Ray(lightSource, radians(a)));
   }
-  rectangles.push(
-    new Rectangle(
-      center.x - config.rectWidth / 2,
-      center.y - config.rectWidth / 2 - config.rectGap - config.rectHeight,
-      config.rectWidth,
-      config.rectHeight
-    )
-  );
 
-  rectangles.push(
-    new Rectangle(
-      center.x - config.rectWidth / 2,
-      center.y + config.rectWidth / 2 + config.rectGap,
-      config.rectWidth,
-      config.rectHeight
-    )
-  );
-
-  rectangles.push(
-    new Rectangle(
-      center.x - config.rectWidth / 2 - config.rectGap - config.rectHeight,
-      center.y - config.rectWidth / 2,
-      config.rectHeight,
-      config.rectWidth
-    )
-  );
-
-  rectangles.push(
-    new Rectangle(
-      center.x + config.rectWidth / 2 + config.rectGap,
-      center.y - config.rectWidth / 2,
-      config.rectHeight,
-      config.rectWidth
-    )
-  );
-
-  // create rectangles at the corners of the canvas
-  rectangles.push(new Rectangle(0, 0, 1, height));
-  rectangles.push(new Rectangle(width, 0, 1, height));
-  rectangles.push(new Rectangle(0, 0, width, 1));
-  rectangles.push(new Rectangle(0, height, width, 1));
+  // Add rectangles
+  const { rectWidth: w, rectHeight: h, rectGap: g } = config;
+  rectangles = [
+    new Rectangle(center.x - w / 2, center.y - w / 2 - g - h, w, h),
+    new Rectangle(center.x - w / 2, center.y + w / 2 + g, w, h),
+    new Rectangle(center.x - w / 2 - g - h, center.y - w / 2, h, w),
+    new Rectangle(center.x + w / 2 + g, center.y - w / 2, h, w),
+    new Rectangle(0, 0, 1, height),
+    new Rectangle(width, 0, 1, height),
+    new Rectangle(0, 0, width, 1),
+    new Rectangle(0, height, width, 1),
+  ];
 }
 
 //=================Draw=============================
@@ -168,7 +131,7 @@ function draw() {
   if (config.record.shouldRecord && frameCount === 1) {
     const capture = P5Capture.getInstance();
     capture.start({
-      duration: config.record.duration * config.fps,
+      // duration: config.record.duration * config.fps,
     });
   }
 
@@ -201,6 +164,7 @@ function draw() {
       lightSource = createVector(1, 1);
       lightSourceVelocity = createVector(1, 0);
       timer.reset();
+      P5Capture.getInstance().stop();
     }
   }
 
@@ -232,17 +196,13 @@ function draw() {
       // Draw ray to intersection point
       stroke(255, 100);
       line(ray.pos.x, ray.pos.y, closest.x, closest.y);
-      // ellipse(closest.x, closest.y, 10, 10);
     }
   });
 
   // Draw rectangles
   rectangles.forEach((rectangle) => rectangle.draw());
-
-  // Draw light source
-  // fill(255, 255, 0);
-  // noStroke();
-  // ellipse(lightSource.x, lightSource.y, 10, 10);
+  fill(0);
+  circle(center.x, center.y, config.centerCircleRadius);
 }
 
 //=================Record=============================
