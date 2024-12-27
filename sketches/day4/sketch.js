@@ -6,9 +6,12 @@ const config = {
   width: 700,
   height: 700,
   fps: 60,
-  numberOfRays: 3000, // One ray per degree
+  lightSourceSpeed: 3,
+  numberOfRays: 5000, // One ray per degree
   rayLength: 2000, // Length of rays
-  numberOfRectangles: 15, // Number of random rectangles
+  rectWidth: 200,
+  rectHeight: 30,
+  rectGap: 50,
   record: {
     shouldRecord: false,
     duration: 60,
@@ -82,7 +85,8 @@ class Rectangle {
   }
 
   draw() {
-    stroke(255);
+    // stroke(255);
+    noStroke();
     noFill();
     rect(this.x, this.y, this.w, this.h);
   }
@@ -93,36 +97,57 @@ class Rectangle {
 let lightSource;
 let rays = [];
 let rectangles = [];
-let lightSourceLFO;
-
+let center;
+let lightSourceVelocity;
 //=================Setup=============================
 
 function setup() {
   createCanvas(config.width, config.height);
   frameRate(config.fps);
 
+  center = createVector(width / 2, height / 2);
   // Create light source at center
   lightSource = createVector(1, 1);
-  lightSourceLFO = createLfo({
-    waveform: LfoWaveform.Sine,
-    frequency: Timing.seconds(10),
-    min: 1,
-    max: width,
-  });
-
+  lightSourceVelocity = createVector(config.lightSourceSpeed, 0);
   // Create rays
-  for (let a = 0; a < 180; a += 180 / config.numberOfRays) {
+  for (let a = 0; a < 360; a += 360 / config.numberOfRays) {
     rays.push(new Ray(lightSource, radians(a)));
   }
+  rectangles.push(
+    new Rectangle(
+      center.x - config.rectWidth / 2,
+      center.y - config.rectWidth / 2 - config.rectGap - config.rectHeight,
+      config.rectWidth,
+      config.rectHeight
+    )
+  );
 
-  // // Create random rectangles
-  // for (let i = 0; i < config.numberOfRectangles; i++) {
-  //   const x = random(50, width - 100);
-  //   const y = random(50, height - 100);
-  //   const w = random(30, 100);
-  //   const h = random(30, 100);
-  //   rectangles.push(new Rectangle(x, y, w, h));
-  // }
+  rectangles.push(
+    new Rectangle(
+      center.x - config.rectWidth / 2,
+      center.y + config.rectWidth / 2 + config.rectGap,
+      config.rectWidth,
+      config.rectHeight
+    )
+  );
+
+  rectangles.push(
+    new Rectangle(
+      center.x - config.rectWidth / 2 - config.rectGap - config.rectHeight,
+      center.y - config.rectWidth / 2,
+      config.rectHeight,
+      config.rectWidth
+    )
+  );
+
+  rectangles.push(
+    new Rectangle(
+      center.x + config.rectWidth / 2 + config.rectGap,
+      center.y - config.rectWidth / 2,
+      config.rectHeight,
+      config.rectWidth
+    )
+  );
 
   // create rectangles at the corners of the canvas
   rectangles.push(new Rectangle(0, 0, 1, height));
@@ -143,10 +168,22 @@ function draw() {
 
   background(0);
 
-  // Update light source position to follow mouse
-  // lightSource.x = mouseX;
-  // lightSource.y = mouseY;
-  lightSource.x = lightSourceLFO.value;
+  lightSource.add(lightSourceVelocity);
+  if (lightSource.x >= width && lightSourceVelocity.x > 0) {
+    lightSource = createVector(width, 1);
+    lightSourceVelocity = createVector(0, config.lightSourceSpeed);
+  } else if (lightSource.x <= 1 && lightSourceVelocity.x < 0) {
+    lightSource = createVector(1, height);
+    lightSourceVelocity = createVector(0, -config.lightSourceSpeed);
+  } else if (lightSource.y >= height && lightSourceVelocity.y > 0) {
+    lightSource = createVector(width, height);
+    lightSourceVelocity = createVector(-config.lightSourceSpeed, 0);
+  } else if (lightSource.y <= 1 && lightSourceVelocity.y < 0) {
+    lightSource = createVector(1, 1);
+    lightSourceVelocity = createVector(config.lightSourceSpeed, 0);
+  }
+
+  console.log(lightSource.x, lightSource.y);
 
   // Update ray positions
   rays.forEach((ray) => {
@@ -154,31 +191,31 @@ function draw() {
   });
 
   // Draw rays and check intersections
-  // rays.forEach((ray) => {
-  //   let closest = null;
-  //   let record = Infinity;
+  rays.forEach((ray) => {
+    let closest = null;
+    let record = Infinity;
 
-  //   // Check all rectangle boundaries
-  //   rectangles.forEach((rectangle) => {
-  //     rectangle.boundaries.forEach((boundary) => {
-  //       const pt = ray.cast(boundary);
-  //       if (pt) {
-  //         const d = p5.Vector.dist(lightSource, pt);
-  //         if (d < record) {
-  //           record = d;
-  //           closest = pt;
-  //         }
-  //       }
-  //     });
-  //   });
+    // Check all rectangle boundaries
+    rectangles.forEach((rectangle) => {
+      rectangle.boundaries.forEach((boundary) => {
+        const pt = ray.cast(boundary);
+        if (pt) {
+          const d = p5.Vector.dist(lightSource, pt);
+          if (d < record) {
+            record = d;
+            closest = pt;
+          }
+        }
+      });
+    });
 
-  //   if (closest) {
-  //     // Draw ray to intersection point
-  //     stroke(255, 100);
-  //     line(ray.pos.x, ray.pos.y, closest.x, closest.y);
-  //     // ellipse(closest.x, closest.y, 10, 10);
-  //   }
-  // });
+    if (closest) {
+      // Draw ray to intersection point
+      stroke(255, 100);
+      line(ray.pos.x, ray.pos.y, closest.x, closest.y);
+      // ellipse(closest.x, closest.y, 10, 10);
+    }
+  });
 
   // Draw rectangles
   rectangles.forEach((rectangle) => rectangle.draw());
