@@ -8,6 +8,7 @@ const config = {
   fps: 60,
   tileWidth: 100 * 0.4,
   tileHeight: 65 * 0.4,
+  ratio: 0.5,
   cols: 54,
   rows: 54,
   xOffset: 350,
@@ -96,13 +97,65 @@ let center;
 const tiles = [];
 let grid;
 let frontier = [];
-
+let treeMatrix;
 //=================Preload===========================
 function preload() {
+  trees = [
+    {
+      img: loadImage(`../../public/images/tiles/isometric/coniferShort.png`),
+      width: 14,
+      height: 36,
+    },
+    {
+      img: loadImage(`../../public/images/tiles/isometric/coniferTall.png`),
+      width: 19,
+      height: 48,
+    },
+    {
+      img: loadImage(`../../public/images/tiles/isometric/coniferAltShort.png`),
+      width: 14,
+      height: 36,
+    },
+    {
+      img: loadImage(`../../public/images/tiles/isometric/coniferAltTall.png`),
+      width: 19,
+      height: 48,
+    },
+    {
+      img: loadImage(`../../public/images/tiles/isometric/treeAltShort.png`),
+      width: 11,
+      height: 32,
+    },
+    {
+      img: loadImage(`../../public/images/tiles/isometric/treeAltTall.png`),
+      width: 11,
+      height: 41,
+    },
+    {
+      img: loadImage(`../../public/images/tiles/isometric/treeShort.png`),
+      width: 11,
+      height: 32,
+    },
+    {
+      img: loadImage(`../../public/images/tiles/isometric/treeTall.png`),
+      width: 12,
+      height: 41,
+    },
+  ];
+
   tileImages.forEach((t) => {
     const img = loadImage(`../../public/images/tiles/isometric/${t.name}.png`);
     tiles.push(new Tile(img, t.edges, t.name));
   });
+
+  treeMatrix = new Matrix(config.cols, config.rows, null);
+  for (let i = 0; i < treeMatrix.cols; i++) {
+    for (let j = 0; j < treeMatrix.rows; j++) {
+      if (random(1) < 0.5) {
+        treeMatrix.set(i, j, random(trees));
+      }
+    }
+  }
 }
 //=================Setup=============================
 
@@ -123,7 +176,7 @@ function reset() {
   // add its neighbors to the frontier
   frontier.push(...grid.getNeighbors(col, row));
   loop();
-  console.log("collapsed", col, row);
+  // console.log("collapsed", col, row);
 }
 
 function setup() {
@@ -279,27 +332,6 @@ function iteration() {
   return true;
 }
 
-function getPosition(col, row) {
-  // Calculate isometric position
-  const cartX =
-    col * config.tileWidth * 0.5 -
-    row * config.tileWidth * 0.5 +
-    config.xOffset;
-  const cartY =
-    row * config.tileHeight +
-    col * config.tileHeight * 0.5 -
-    col * config.tileHeight * 0.115 +
-    -row * config.tileHeight * 0.615 +
-    config.yOffset;
-
-  // Convert to isometric coordinates
-  // Each tile is offset by half its width and height relative to its neighbors
-  const x = cartX;
-  const y = cartY;
-
-  return createVector(x, y);
-}
-
 function draw() {
   if (config.record.shouldRecord && frameCount === 1) {
     const capture = P5Capture.getInstance();
@@ -310,34 +342,13 @@ function draw() {
   for (let i = 0; i < config.iterationsPerFrame; i++) {
     iteration();
   }
-  // if (frameCount % config.framesPerIteration === 0) {
-  // iteration();
-  // }
-  // let iterationCount = 0;
-  // while (iterationCount < config.iterationsPerFrame) {
-  //   if (iteration()) {
-  //     iterationCount++;
-  //   }
-  // }
+
   background(0);
   for (let col = 0; col < grid.cols; col++) {
     for (let row = 0; row < grid.rows; row++) {
       const cell = grid.get(col, row);
       if (cell.collapsed) {
-        const pos = getPosition(col, row);
-        if (pos.x < -config.tileWidth || pos.x > width + config.tileWidth) {
-          continue;
-        }
-        if (pos.y < -config.tileHeight || pos.y > height + config.tileHeight) {
-          continue;
-        }
-        image(
-          grid.get(col, row).tile.img,
-          pos.x,
-          pos.y,
-          config.tileWidth,
-          config.tileHeight
-        );
+        cell.tile.draw(col, row, config);
       }
     }
   }
