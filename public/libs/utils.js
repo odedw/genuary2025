@@ -22,7 +22,12 @@ function createColorLfo() {
   const obj = {
     l: createLfo(LfoWaveform.Sine, Timing.frames(int(random(20 * 60, phase)))),
     s: createLfo(LfoWaveform.Sine, Timing.frames(int(random(20 * 60, phase)))),
-    h: createLfo(LfoWaveform.Sine, Timing.frames(int(hFrequency), hPhase), -1, 1),
+    h: createLfo(
+      LfoWaveform.Sine,
+      Timing.frames(int(hFrequency), hPhase),
+      -1,
+      1
+    ),
   };
 
   obj.color = function () {
@@ -30,8 +35,12 @@ function createColorLfo() {
     const s = map(obj.s.value, -1, 1, 20, 100);
     const l = map(obj.l.value, -1, 1, 30, 70);
 
-    let color = new Color('hsl', [h, s, l]);
-    return { r: color.srgb.r * 255, g: color.srgb.g * 255, b: color.srgb.b * 255 };
+    let color = new Color("hsl", [h, s, l]);
+    return {
+      r: color.srgb.r * 255,
+      g: color.srgb.g * 255,
+      b: color.srgb.b * 255,
+    };
   };
 
   obj.fill = function () {
@@ -59,79 +68,77 @@ class Matrix {
     }
   }
 
-  get(x, y) {
-    return this._matrix[x][y];
+  get(col, row) {
+    if (col < 0 || col >= this.width || row < 0 || row >= this.height) {
+      return null;
+    }
+    return this._matrix[col][row];
   }
 
-  set(x, y, value) {
-    this._matrix[x][y] = value;
+  set(col, row, value) {
+    this._matrix[col][row] = value;
   }
 
   get width() {
     return this._matrix.length;
   }
 
-  get height() {
+  get cols() {
+    return this._matrix.length;
+  }
+
+  get rows() {
     return this._matrix[0].length;
   }
 
-  getNeighbors(x, y, predicate) {
+  get cells() {
+    return this._matrix.flat();
+  }
+
+  getNeighbors(col, row) {
     const neighbors = [];
+    const up = this.get(col, row - 1);
+    const right = this.get(col + 1, row);
+    const down = this.get(col, row + 1);
+    const left = this.get(col - 1, row);
 
-    for (let i = x - 1; i <= x + 1; i++) {
-      if (i < 0 || i >= this.width) {
-        continue;
-      }
-
-      for (let j = y - 1; j <= y + 1; j++) {
-        if (j < 0 || j >= this.height) {
-          continue;
-        }
-
-        if (i === x && j === y) {
-          continue;
-        }
-
-        if (predicate && !predicate(this.get(i, j))) {
-          continue;
-        }
-
-        neighbors.push({ x: i, y: j, value: this.get(i, j) });
-      }
-    }
+    if (up) neighbors.push({ col: col, row: row - 1, value: up });
+    if (right) neighbors.push({ col: col + 1, row: row, value: right });
+    if (down) neighbors.push({ col: col, row: row + 1, value: down });
+    if (left) neighbors.push({ col: col - 1, row: row, value: left });
 
     return neighbors;
   }
 
-  bfs(startPoint, predicate) {
-    const queue = [startPoint];
-    const visited = new Set([`${startPoint.x},${startPoint.y}`]);
+  //   bfs(startPoint, predicate) {
+  //     const queue = [startPoint];
+  //     const visited = new Set([`${startPoint.x},${startPoint.y}`]);
 
-    while (queue.length > 0) {
-      const { x, y } = queue.shift(); // Dequeue the next cell
+  //     while (queue.length > 0) {
+  //       const { x, y } = queue.shift(); // Dequeue the next cell
 
-      if (predicate(this.get(x, y))) {
-        return { x, y }; // Found the target cell
-      }
+  //       if (predicate(this.get(x, y))) {
+  //         return { x, y }; // Found the target cell
+  //       }
 
-      // Get all valid, not yet visited neighbors
-      const neighbors = this.getNeighbors(x, y).filter((neighbor) => {
-        const key = `${neighbor.x},${neighbor.y}`;
-        if (visited.has(key)) {
-          return false;
-        }
-        visited.add(key); // Mark this neighbor as visited
-        return true;
-      });
+  //       // Get all valid, not yet visited neighbors
+  //       const neighbors = this.getNeighbors(x, y).filter((neighbor) => {
+  //         const key = `${neighbor.x},${neighbor.y}`;
+  //         if (visited.has(key)) {
+  //           return false;
+  //         }
+  //         visited.add(key); // Mark this neighbor as visited
+  //         return true;
+  //       });
 
-      // Enqueue all unvisited neighbors
-      for (const neighbor of neighbors) {
-        queue.push(neighbor);
-      }
-    }
+  //       // Enqueue all unvisited neighbors
+  //       for (const neighbor of neighbors) {
+  //         queue.push(neighbor);
+  //       }
+  //     }
 
-    return null; // No cell with value true was found
-  }
+  //     return null; // No cell with value true was found
+  //   }
 }
 
 function generateGrid(cols, rows, w, h) {
@@ -140,7 +147,8 @@ function generateGrid(cols, rows, w, h) {
     for (let row = 0; row < rows; row++) {
       let x = col * (w / (cols - 1));
       let y = row * (h / (rows - 1));
-      if (x >= 0 && x <= w && y >= 0 && y <= h) points.push({ x: int(x), y: int(y), col, row });
+      if (x >= 0 && x <= w && y >= 0 && y <= h)
+        points.push({ x: int(x), y: int(y), col, row });
     }
   }
   return points;
@@ -155,7 +163,7 @@ function initScenes(s) {
 }
 
 function onSceneChanged(prevScene, currentScene) {
-  console.log('scene changed', prevScene, currentScene);
+  console.log("scene changed", prevScene, currentScene);
 }
 function nextScene() {
   let prevScene = currentScene;
