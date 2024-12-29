@@ -29,7 +29,9 @@ class Cell {
     // up
     const up = grid.get(col, row - 1);
     if (up?.collapsed) {
-      totalPossibleTiles.push(allTiles.filter((t) => t.up === up.tile.down));
+      totalPossibleTiles.push(
+        allTiles.filter((t) => doesFit(t.up, up.tile.down))
+      );
       // for (const possibleTile of up.tiles) {
       //   // if (up.collapsed) debugger;
       //   totalPossibleTiles.push(
@@ -41,7 +43,7 @@ class Cell {
     const right = grid.get(col + 1, row);
     if (right?.collapsed) {
       totalPossibleTiles.push(
-        allTiles.filter((t) => t.right === right.tile.left)
+        allTiles.filter((t) => doesFit(t.right, right.tile.left))
       );
       // for (const possibleTile of right.tiles) {
       // if (right.collapsed) debugger;
@@ -53,7 +55,9 @@ class Cell {
     // down
     const down = grid.get(col, row + 1);
     if (down?.collapsed) {
-      totalPossibleTiles.push(allTiles.filter((t) => t.down === down.tile.up));
+      totalPossibleTiles.push(
+        allTiles.filter((t) => doesFit(t.down, down.tile.up))
+      );
       // for (const possibleTile of down.tiles) {
       //   // if (down.collapsed) debugger;
       //   totalPossibleTiles.push(
@@ -64,7 +68,7 @@ class Cell {
     const left = grid.get(col - 1, row);
     if (left?.collapsed) {
       totalPossibleTiles.push(
-        allTiles.filter((t) => t.left === left.tile.right)
+        allTiles.filter((t) => doesFit(t.left, left.tile.right))
       );
       // for (const possibleTile of left.tiles) {
       //   // if (left.collapsed) debugger;

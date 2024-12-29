@@ -13,6 +13,7 @@ const config = {
   xOffset: 350,
   yOffset: -190,
   iterationsPerFrame: 4,
+  framesPerIteration: 1,
   record: {
     shouldRecord: false,
     duration: 60,
@@ -24,22 +25,49 @@ const config = {
 // G = grass
 // edges = [up, down, left, right]
 const tileImages = [
-  { name: "crossroad", edges: ["R", "R", "R", "R"] },
-  { name: "crossroadESW", edges: ["R", "R", "R", "G"] },
-  { name: "crossroadNES", edges: ["R", "R", "G", "R"] },
-  { name: "crossroadNEW", edges: ["R", "G", "R", "R"] },
-  { name: "crossroadNSW", edges: ["G", "R", "R", "R"] },
-  { name: "grass", edges: ["G", "G", "G", "G"] },
-  { name: "endE", edges: ["R", "G", "G", "G"] },
-  { name: "endW", edges: ["G", "G", "R", "G"] },
-  { name: "endN", edges: ["G", "G", "G", "R"] },
-  { name: "endS", edges: ["G", "R", "G", "G"] },
-  { name: "roadES", edges: ["R", "R", "G", "G"] },
-  { name: "roadEW", edges: ["R", "G", "R", "G"] },
-  { name: "roadNE", edges: ["R", "G", "G", "R"] },
-  { name: "roadNS", edges: ["G", "R", "G", "R"] },
-  { name: "roadNW", edges: ["G", "G", "R", "R"] },
-  { name: "roadSW", edges: ["G", "R", "R", "G"] },
+  // { name: "crossroad", edges: ["R", "R", "R", "R"] },
+  // { name: "crossroadESW", edges: ["R", "R", "R", "G"] },
+  // { name: "crossroadNES", edges: ["R", "R", "G", "R"] },
+  // { name: "crossroadNEW", edges: ["R", "G", "R", "R"] },
+  // { name: "crossroadNSW", edges: ["G", "R", "R", "R"] },
+  // { name: "endE", edges: ["R", "G", "G", "G"] },
+  // { name: "endW", edges: ["G", "G", "R", "G"] },
+  // { name: "endN", edges: ["G", "G", "G", "R"] },
+  // { name: "endS", edges: ["G", "R", "G", "G"] },
+  // { name: "roadES", edges: ["R", "R", "G", "G"] },
+  // { name: "roadEW", edges: ["R", "G", "R", "G"] },
+  // { name: "roadNE", edges: ["R", "G", "G", "R"] },
+  // { name: "roadNS", edges: ["G", "R", "G", "R"] },
+  // { name: "roadNW", edges: ["G", "G", "R", "R"] },
+  // { name: "roadSW", edges: ["G", "R", "R", "G"] },
+  // { name: "bridgeLowEW", edges: ["R", "r", "R", "r"] },
+  // { name: "bridgeLowNS", edges: ["r", "R", "r", "R"] },
+  // { name: "riverES", edges: ["W", "W", "G", "G"] },
+  // { name: "riverEW", edges: ["W", "G", "W", "G"] },
+  // { name: "riverNE", edges: ["W", "G", "G", "W"] },
+  // { name: "riverNS", edges: ["G", "W", "G", "W"] },
+  // { name: "riverNW", edges: ["G", "G", "W", "W"] },
+  // { name: "riverSW", edges: ["G", "W", "W", "G"] },
+  { name: "grass", edges: ["GGG", "GGG", "GGG", "GGG"] },
+  // { name: "riverES", edges: ["GWG", "GWG", "GGG", "GGG"] },
+  // { name: "riverEW", edges: ["GWG", "GGG", "GWG", "GGG"] },
+  // { name: "riverNE", edges: ["GWG", "GGG", "GGG", "GWG"] },
+  // { name: "riverNS", edges: ["GGG", "GWG", "GGG", "GWG"] },
+  // { name: "riverNW", edges: ["GGG", "GGG", "GWG", "GWG"] },
+  // { name: "riverSW", edges: ["GGG", "GWG", "GWG", "GGG"] },
+  { name: "water", edges: ["WWW", "WWW", "WWW", "WWW"] },
+  { name: "waterCornerES", edges: ["WWG", "GWW", "WWW", "WWW"] },
+  { name: "waterCornerNE", edges: ["GWW", "WWW", "WWW", "WWG"] },
+  { name: "waterCornerNW", edges: ["WWW", "WWW", "WWG", "GWW"] },
+  { name: "waterCornerSW", edges: ["WWW", "WWG", "GWW", "WWW"] },
+  { name: "waterE", edges: ["GGG", "GWW", "WWW", "WWG"] },
+  { name: "waterES", edges: ["GGG", "GGG", "GWW", "WWG"] },
+  { name: "waterN", edges: ["GWW", "WWW", "WWG", "GGG"] },
+  { name: "waterNE", edges: ["GGG", "GWW", "WWG", "GGG"] },
+  { name: "waterNW", edges: ["GWW", "WWG", "GGG", "GGG"] },
+  { name: "waterS", edges: ["WWG", "GGG", "GWW", "WWW"] },
+  { name: "waterSW", edges: ["WWG", "GGG", "GGG", "GWW"] },
+  { name: "waterW", edges: ["WWW", "WWG", "GGG", "GWW"] },
 ];
 
 //=================Variables=============================
@@ -54,7 +82,7 @@ let frontier = [];
 function preload() {
   tileImages.forEach((t) => {
     const img = loadImage(`../../public/images/tiles/isometric/${t.name}.png`);
-    tiles.push(new Tile(img, t.edges));
+    tiles.push(new Tile(img, t.edges, t.name));
   });
 }
 //=================Setup=============================
@@ -75,7 +103,8 @@ function reset() {
 
   // add its neighbors to the frontier
   frontier.push(...grid.getNeighbors(col, row));
-  // console.log("collapsed", col, row);
+  loop();
+  console.log("collapsed", col, row);
 }
 
 function setup() {
@@ -98,7 +127,7 @@ function iteration() {
   if (unCollapsedCells.length === 0) {
     console.log("done");
     noLoop();
-    return;
+    return true;
   }
 
   const nextGrid = new Matrix(grid.cols, grid.rows, null);
@@ -108,21 +137,33 @@ function iteration() {
   if (frontier.length > 0) {
     for (const c of frontier) {
       const cell = c.value;
-      const nextPossibleTiles = cell.calculatePossibleTiles(
+      let nextPossibleTiles = cell.calculatePossibleTiles(
         c.col,
         c.row,
         grid,
         tiles
       );
       if (nextPossibleTiles.length < cell.entropy) {
+        // collapsed
+
         if (nextPossibleTiles.length === 0) {
-          console.log("impossible");
+          console.log("impossible - frontier");
+          // debugger;
+          // nextPossibleTiles = cell.calculatePossibleTiles(
+          //   c.col,
+          //   c.row,
+          //   grid,
+          //   tiles
+          // );
           noLoop();
-          return;
+          return false;
         }
         somethingChanged = true;
         nextGrid.set(c.col, c.row, new Cell(nextPossibleTiles));
         frontier.push(...grid.getNeighbors(c.col, c.row));
+        if (nextPossibleTiles === 1) {
+          break;
+        }
       }
     }
   }
@@ -145,10 +186,15 @@ function iteration() {
       }
     }
 
-    // collapse it
     const selectedCoords = random(lowestEntropyCellCoords);
     const selectedCell = grid.get(selectedCoords.col, selectedCoords.row);
-    selectedCell.tiles = [random(selectedCell.tiles)];
+    // collapse it
+    // selectedCell.tiles = [random(selectedCell.tiles)];
+    // remove one tile from it's possible tiles
+    const tileIndexToRemove = int(random(selectedCell.tiles.length));
+    selectedCell.tiles = selectedCell.tiles.filter(
+      (_, index) => index !== tileIndexToRemove
+    );
   }
 
   // update the grid
@@ -159,17 +205,24 @@ function iteration() {
         continue;
       }
 
-      const nextPossibleTiles = grid
+      let nextPossibleTiles = grid
         .get(col, row)
         .calculatePossibleTiles(col, row, grid, tiles);
       // console.log(col, row, nextPossibleTiles);
-      if (!nextPossibleTiles) {
-        debugger;
-        grid.get(col, row).calculatePossibleTiles(col, row, grid, tiles);
-      }
+      // if (!nextPossibleTiles) {
+      //   debugger;
+      //   grid.get(col, row).calculatePossibleTiles(col, row, grid, tiles);
+      // }
       if (nextPossibleTiles.length === 0) {
         impossible = true;
-        break;
+        // debugger;
+        // nextPossibleTiles = grid
+        //   .get(col, row)
+        //   .calculatePossibleTiles(col, row, grid, tiles);
+        console.log("impossible - grid");
+        noLoop();
+        return false;
+        // break;
       } else {
         nextGrid.set(col, row, new Cell(nextPossibleTiles));
       }
@@ -180,8 +233,10 @@ function iteration() {
   }
 
   if (impossible) {
-    console.log("impossible");
-    noLoop();
+    console.log("impossible - grid");
+    // noLoop();
+    // reset();
+    return false;
   }
 
   grid = nextGrid;
@@ -190,6 +245,7 @@ function iteration() {
   frontier = [];
   for (let col = 0; col < grid.cols; col++) {
     for (let row = 0; row < grid.rows; row++) {
+      if (!grid.get(col, row)) debugger;
       if (grid.get(col, row).collapsed) {
         const neighbors = grid
           .getNeighbors(col, row)
@@ -201,6 +257,7 @@ function iteration() {
       }
     }
   }
+  return true;
 }
 
 function getPosition(col, row) {
@@ -231,10 +288,15 @@ function draw() {
       duration: config.record.duration * config.fps,
     });
   }
-  // if (frameCount % config.framesPerIteration === 0) {
-  for (let i = 0; i < config.iterationsPerFrame; i++) {
+  if (frameCount % config.framesPerIteration === 0) {
     iteration();
   }
+  // let iterationCount = 0;
+  // while (iterationCount < config.iterationsPerFrame) {
+  //   if (iteration()) {
+  //     iterationCount++;
+  //   }
+  // }
   background(0);
   for (let col = 0; col < grid.cols; col++) {
     for (let row = 0; row < grid.rows; row++) {
