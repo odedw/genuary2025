@@ -8,7 +8,8 @@ const config = {
   fps: 60,
   tileWidth: 100 * 0.4,
   tileHeight: 65 * 0.4,
-  ratio: 0.5,
+  ratio: 0.6,
+  treeDensity: 0.8,
   cols: 54,
   rows: 54,
   xOffset: 350,
@@ -17,7 +18,7 @@ const config = {
   framesPerIteration: 1,
   record: {
     shouldRecord: false,
-    duration: 60,
+    duration: 30,
   },
 };
 
@@ -82,12 +83,6 @@ const tileImages = [
   // { name: "beachS", edges: ["WWB", "BBB", "BWW", "WWW"] },
   // { name: "beachSW", edges: ["GGG", "BWW", "WWB", "GGG"] },
   // { name: "beachW", edges: ["WWW", "WWB", "BBB", "BWW"] },
-  // { name: "", edges: ["", "", "", ""] },
-  // { name: "", edges: ["", "", "", ""] },
-  // { name: "", edges: ["", "", "", ""] },
-  // { name: "", edges: ["", "", "", ""] },
-  // { name: "", edges: ["", "", "", ""] },
-  // { name: "", edges: ["", "", "", ""] },
 ];
 
 //=================Variables=============================
@@ -151,7 +146,7 @@ function preload() {
   treeMatrix = new Matrix(config.cols, config.rows, null);
   for (let i = 0; i < treeMatrix.cols; i++) {
     for (let j = 0; j < treeMatrix.rows; j++) {
-      if (random(1) < 0.5) {
+      if (random(1) < config.treeDensity) {
         treeMatrix.set(i, j, random(trees));
       }
     }
@@ -160,6 +155,7 @@ function preload() {
 //=================Setup=============================
 
 function reset() {
+  done = false;
   grid = new Matrix(config.cols, config.rows, null);
   for (let i = 0; i < grid.cols; i++) {
     for (let j = 0; j < grid.rows; j++) {
@@ -192,13 +188,17 @@ function setup() {
 
 //=================Draw=============================
 
+let done = false;
 function iteration() {
   // check if we're done
-  // console.log("iteration", frameCount);
   const unCollapsedCells = grid.cells.filter((c) => !c.collapsed);
   if (unCollapsedCells.length === 0) {
     console.log("done");
-    noLoop();
+    // noLoop();
+    done = true;
+    setTimeout(() => {
+      reset();
+    }, 2000);
     return true;
   }
 
@@ -220,14 +220,8 @@ function iteration() {
 
         if (nextPossibleTiles.length === 0) {
           console.log("impossible - frontier");
-          // debugger;
-          // nextPossibleTiles = cell.calculatePossibleTiles(
-          //   c.col,
-          //   c.row,
-          //   grid,
-          //   tiles
-          // );
           noLoop();
+          reset();
           return false;
         }
         somethingChanged = true;
@@ -241,9 +235,7 @@ function iteration() {
   }
 
   if (!somethingChanged) {
-    // console.log("no change in frontier", frameCount);
     // if not, find the cell with the least entropy
-
     const lowestEntropyValue = unCollapsedCells.reduce((min, cell) => {
       return Math.min(min, cell.entropy);
     }, Infinity);
@@ -260,8 +252,6 @@ function iteration() {
 
     const selectedCoords = random(lowestEntropyCellCoords);
     const selectedCell = grid.get(selectedCoords.col, selectedCoords.row);
-    // collapse it
-    // selectedCell.tiles = [random(selectedCell.tiles)];
     // remove one tile from it's possible tiles
     const tileIndexToRemove = int(random(selectedCell.tiles.length));
     selectedCell.tiles = selectedCell.tiles.filter(
@@ -270,7 +260,6 @@ function iteration() {
   }
 
   // update the grid
-  let impossible = false;
   for (let col = 0; col < grid.cols; col++) {
     for (let row = 0; row < grid.rows; row++) {
       if (!!nextGrid.get(col, row)) {
@@ -280,35 +269,15 @@ function iteration() {
       let nextPossibleTiles = grid
         .get(col, row)
         .calculatePossibleTiles(col, row, grid, tiles);
-      // console.log(col, row, nextPossibleTiles);
-      // if (!nextPossibleTiles) {
-      //   debugger;
-      //   grid.get(col, row).calculatePossibleTiles(col, row, grid, tiles);
-      // }
       if (nextPossibleTiles.length === 0) {
-        impossible = true;
-        // debugger;
-        // nextPossibleTiles = grid
-        //   .get(col, row)
-        //   .calculatePossibleTiles(col, row, grid, tiles);
         console.log("impossible - grid");
         noLoop();
+        reset();
         return false;
-        // break;
       } else {
         nextGrid.set(col, row, new Cell(nextPossibleTiles));
       }
     }
-    if (impossible) {
-      break;
-    }
-  }
-
-  if (impossible) {
-    console.log("impossible - grid");
-    // noLoop();
-    // reset();
-    return false;
   }
 
   grid = nextGrid;
@@ -340,7 +309,12 @@ function draw() {
     });
   }
   for (let i = 0; i < config.iterationsPerFrame; i++) {
-    iteration();
+    if (done) {
+      return;
+    }
+    if (!iteration()) {
+      return;
+    }
   }
 
   background(0);
