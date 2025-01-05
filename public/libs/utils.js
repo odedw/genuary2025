@@ -1,3 +1,11 @@
+function drawFramerate() {
+  stroke(255);
+  strokeWeight(1);
+  fill(255);
+  textSize(20);
+  text(int(frameRate()), 10, 20);
+}
+
 function polarToCartesian(r, a) {
   return {
     x: cos(a) * r,
