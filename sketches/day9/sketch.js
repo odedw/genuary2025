@@ -6,11 +6,12 @@ const config = {
   width: 700,
   height: 700,
   fps: 60,
+  speed: 0.1,
   noiseAmount: 10000,
   noiseDelta: 10,
   stripeDelta: 50,
   palette: ["#0153C5", "#29C6CE", "#F5718A", "#EEC364", "#0893E3"],
-  numberOfCells: 9,
+  numberOfCells: 10,
   lineWidth: 1,
   cellResolution: 10,
   record: {
@@ -27,9 +28,10 @@ let patternTypes = [
   "inner-square",
 ];
 class Cell {
-  constructor(x, y, c, patternType) {
+  constructor(x, y, c, patternType, vel) {
     this.x = x;
     this.y = y;
+    this.vel = vel;
 
     this.patternType = patternType;
     this.c = c;
@@ -80,8 +82,23 @@ class Cell {
     }
   }
 
+  update() {
+    this.x += this.vel.x;
+    this.y += this.vel.y;
+    if (this.x > width) {
+      this.x -= width;
+    } else if (this.x < 0) {
+      this.x += width;
+    }
+  }
+
   draw() {
     image(this.finalBuffer, this.x, this.y, cellSize, cellSize);
+    if (this.x > width - cellSize) {
+      image(this.finalBuffer, this.x - width, this.y, cellSize, cellSize);
+    } else if (this.x < 0) {
+      image(this.finalBuffer, this.x + width, this.y, cellSize, cellSize);
+    }
   }
 }
 
@@ -155,6 +172,7 @@ function setup() {
     }
 
     for (let i = 0; i < config.numberOfCells; i++) {
+      const xSpeed = j % 2 === 0 ? config.speed : -config.speed;
       let patternType = rowPatterns[i % rowPatterns.length];
       let c =
         patternType === "solid-color-background" ? config.palette[0] : rowColor;
@@ -162,7 +180,8 @@ function setup() {
         i * cellSize, // + cellSize / 2,
         j * cellSize, // + cellSize / 2,
         c,
-        patternType
+        patternType,
+        createVector(xSpeed, 0)
       );
       cells.push(cell);
     }
@@ -187,9 +206,10 @@ function draw() {
   }
   background(0);
   for (let cell of cells) {
+    cell.update();
     cell.draw();
   }
-  drawFramerate();
+  // drawFramerate();
 }
 
 //=================Record=============================
