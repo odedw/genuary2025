@@ -6,9 +6,9 @@ const config = {
   width: 700,
   height: 700,
   fps: 60,
-  speed: 0.1,
+  speed: 0.2,
   noiseAmount: 10000,
-  noiseDelta: 10,
+  noiseDelta: 15,
   stripeDelta: 50,
   palette: ["#0153C5", "#29C6CE", "#F5718A", "#EEC364", "#0893E3"],
   numberOfCells: 10,
@@ -37,6 +37,7 @@ class Cell {
     this.c = c;
 
     this.finalBuffer = createGraphics(cellSize, cellSize);
+    this.finalBuffer.pixelDensity(1);
     const buffer = bufferByColor[this.c];
     const backgroundBuffer = bufferByColor[config.palette[0]];
 
@@ -57,29 +58,46 @@ class Cell {
       this.finalBuffer.image(backgroundBuffer, 0, 0, cellSize, cellSize);
       this.finalBuffer.image(
         buffer,
-        0.25 * cellSize,
-        0.25 * cellSize,
-        cellSize * 0.5,
-        cellSize * 0.5,
-        buffer.width * 0.25,
-        buffer.height * 0.25,
-        buffer.width * 0.5,
-        buffer.height * 0.5
+        0.2 * cellSize,
+        0.2 * cellSize,
+        cellSize * 0.6,
+        cellSize * 0.6,
+        buffer.width * 0.2,
+        buffer.height * 0.2,
+        buffer.width * 0.6,
+        buffer.height * 0.6
       );
     } else {
       this.finalBuffer.image(buffer, 0, 0, cellSize, cellSize);
     }
+
+    // add noise
+    this.finalBuffer.loadPixels();
     for (let i = 0; i < config.noiseAmount; i++) {
       let x = Math.floor(Math.random() * this.finalBuffer.width);
       let y = Math.floor(Math.random() * this.finalBuffer.height);
-
+      const pixelIndex = 4 * (y * this.finalBuffer.width + x);
       // make it darker or lighter
-      let c = this.finalBuffer.get(x, y);
+
+      // let c = this.finalBuffer.get(x, y);
       const delta = config.noiseDelta * (random() < 0.5 ? 1 : -1);
-      let c2 = color(red(c) + delta, green(c) + delta, blue(c) + delta);
-      this.finalBuffer.stroke(c2);
-      this.finalBuffer.point(x, y);
+      this.finalBuffer.pixels[pixelIndex] = constrain(
+        this.finalBuffer.pixels[pixelIndex] + delta,
+        0,
+        255
+      );
+      this.finalBuffer.pixels[pixelIndex + 1] = constrain(
+        this.finalBuffer.pixels[pixelIndex + 1] + delta,
+        0,
+        255
+      );
+      this.finalBuffer.pixels[pixelIndex + 2] = constrain(
+        this.finalBuffer.pixels[pixelIndex + 2] + delta,
+        0,
+        255
+      );
     }
+    this.finalBuffer.updatePixels();
   }
 
   update() {
@@ -218,6 +236,7 @@ let isLooping = true;
 function mouseClicked() {
   isLooping = !isLooping;
   isLooping ? loop() : noLoop();
+  console.log(frameCount);
 }
 
 if (config.record.shouldRecord) {
