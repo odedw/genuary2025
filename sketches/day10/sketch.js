@@ -27,7 +27,7 @@ const config = {
   },
   record: {
     shouldRecord: false,
-    duration: 60,
+    duration: 9,
   },
 };
 
@@ -197,12 +197,14 @@ function setup() {
     speed: int(random(config.speed.min, config.speed.max)),
     direction: random([-1, 1]),
     delay: int(random(config.delay.min, config.delay.max)),
+    color: random(PALETTE),
   }));
   currentLowerXs = lowerSegments.map((segment) => ({
     current: 0,
     speed: int(random(config.speed.min, config.speed.max)),
     direction: random([-1, 1]),
     delay: int(random(config.delay.min, config.delay.max)),
+    color: random(PALETTE),
   }));
 }
 
@@ -217,9 +219,9 @@ function draw() {
   }
   // background(0);
   noStroke();
-  fill(255);
   for (let i = 0; i < currentUpperXs.length; i++) {
     const currentUpperX = currentUpperXs[i];
+    fill(currentUpperX.color);
     if (frameCount < currentUpperX.delay) {
       continue;
     }
@@ -239,12 +241,12 @@ function draw() {
       }
       const segment = segments[segmentIndex];
       if (segment instanceof LineSegment) {
-        square(currentUpperX.current, segment.y, 1.5);
+        square(currentUpperX.current, segment.y, 2);
       } else if (segment instanceof CircleSegment) {
         // find the y at point currentUpperX.current
         const a = segment.startX + segment.r - currentUpperX.current;
         const y = sqrt(segment.r * segment.r - a * a);
-        square(currentUpperX.current, segment.y - y, 1.5);
+        square(currentUpperX.current, segment.y - y, 2);
       }
       currentUpperX.current++;
     }
@@ -252,6 +254,7 @@ function draw() {
 
   for (let i = 0; i < lowerSegments.length; i++) {
     const currentLowerX = currentLowerXs[i];
+    fill(currentLowerX.color);
     if (frameCount < currentLowerX.delay) {
       continue;
     }
@@ -271,12 +274,12 @@ function draw() {
       }
       const segment = segments[segmentIndex];
       if (segment instanceof LineSegment) {
-        square(currentLowerX.current, segment.y, 1.5);
+        square(currentLowerX.current, segment.y, 2);
       } else if (segment instanceof CircleSegment) {
         // find the y at point currentLowerX.current
         const a = segment.startX + segment.r - currentLowerX.current;
         const y = sqrt(segment.r * segment.r - a * a);
-        square(currentLowerX.current, segment.y + y, 1.5);
+        square(currentLowerX.current, segment.y + y, 2);
       }
       currentLowerX.current++;
     }
@@ -299,6 +302,7 @@ let isLooping = true;
 function mouseClicked() {
   isLooping = !isLooping;
   isLooping ? loop() : noLoop();
+  console.log(frameCount);
 }
 
 if (config.record.shouldRecord) {

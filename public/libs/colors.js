@@ -310,7 +310,7 @@ const palettes2 = [
   {
     name: "Beach",
     colors: ["#FFD700", "#FFB700", "#FFA500", "#FF8C00", "#FF7F00", "#FF6B00"],
-  }
+  },
 ];
 
 const monochromePalettes = [
@@ -369,4 +369,4 @@ function randomColorForSeed(obj) {
   return PALETTE[index];
 }
 
-randomPalette2();
+randomPalette();
