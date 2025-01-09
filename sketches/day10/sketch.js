@@ -13,6 +13,14 @@ const config = {
     min: 100,
     max: 100,
   },
+  speed: {
+    min: 2,
+    max: 2,
+  },
+  delay: {
+    min: 1,
+    max: 120,
+  },
   radius: {
     min: 10,
     max: 100,
@@ -68,6 +76,8 @@ let center;
 let upperSegments = [];
 let lowerSegments = [];
 let circleCenters = [];
+let currentUpperXs = [];
+let currentLowerXs = [];
 //=================Setup=============================
 
 function generateUpperSegment(segmentRow) {
@@ -182,8 +192,18 @@ function setup() {
     y = newSegmentRow[0].y;
   }
 
-  // segments.push(new CircleSegment(200, ))
-  //   background(0);
+  currentUpperXs = upperSegments.map((segment) => ({
+    current: 0,
+    speed: int(random(config.speed.min, config.speed.max)),
+    direction: random([-1, 1]),
+    delay: int(random(config.delay.min, config.delay.max)),
+  }));
+  currentLowerXs = lowerSegments.map((segment) => ({
+    current: 0,
+    speed: int(random(config.speed.min, config.speed.max)),
+    direction: random([-1, 1]),
+    delay: int(random(config.delay.min, config.delay.max)),
+  }));
 }
 
 //=================Draw=============================
@@ -195,22 +215,82 @@ function draw() {
       duration: config.record.duration * config.fps,
     });
   }
-  background(0);
-  upperSegments.forEach((segmentRow) => {
-    segmentRow.forEach((segment) => segment.draw());
-  });
-  lowerSegments.forEach((segmentRow) => {
-    segmentRow.forEach((segment) => segment.draw());
-  });
-  circleCenters.forEach((center) => {
-    strokeWeight(config.strokeWeight);
-    stroke(255);
-    let r = center.r;
-    while (r > 0) {
-      circle(center.x, center.y, r * 2);
-      r -= 0.01 * height;
+  // background(0);
+  noStroke();
+  fill(255);
+  for (let i = 0; i < currentUpperXs.length; i++) {
+    const currentUpperX = currentUpperXs[i];
+    if (frameCount < currentUpperX.delay) {
+      continue;
     }
-  });
+    const segments = upperSegments[i];
+    for (let i = 0; i < currentUpperX.speed; i++) {
+      if (currentUpperX.current >= width) {
+        break;
+      }
+
+      // find the segment that contains the currentUpperX.current
+      let segmentIndex =
+        segments.findIndex(
+          (segment) => segment.startX > currentUpperX.current
+        ) - 1;
+      if (segmentIndex === -2) {
+        segmentIndex = segments.length - 1;
+      }
+      const segment = segments[segmentIndex];
+      if (segment instanceof LineSegment) {
+        square(currentUpperX.current, segment.y, 1.5);
+      } else if (segment instanceof CircleSegment) {
+        // find the y at point currentUpperX.current
+        const a = segment.startX + segment.r - currentUpperX.current;
+        const y = sqrt(segment.r * segment.r - a * a);
+        square(currentUpperX.current, segment.y - y, 1.5);
+      }
+      currentUpperX.current++;
+    }
+  }
+
+  for (let i = 0; i < lowerSegments.length; i++) {
+    const currentLowerX = currentLowerXs[i];
+    if (frameCount < currentLowerX.delay) {
+      continue;
+    }
+    const segments = lowerSegments[i];
+    for (let i = 0; i < currentLowerX.speed; i++) {
+      if (currentLowerX.current >= width) {
+        break;
+      }
+
+      // find the segment that contains the currentLowerX.current
+      let segmentIndex =
+        segments.findIndex(
+          (segment) => segment.startX > currentLowerX.current
+        ) - 1;
+      if (segmentIndex === -2) {
+        segmentIndex = segments.length - 1;
+      }
+      const segment = segments[segmentIndex];
+      if (segment instanceof LineSegment) {
+        square(currentLowerX.current, segment.y, 1.5);
+      } else if (segment instanceof CircleSegment) {
+        // find the y at point currentLowerX.current
+        const a = segment.startX + segment.r - currentLowerX.current;
+        const y = sqrt(segment.r * segment.r - a * a);
+        square(currentLowerX.current, segment.y + y, 1.5);
+      }
+      currentLowerX.current++;
+    }
+  }
+  // circleCenters.forEach((center) => {
+  // circleCenters.forEach((center) => {
+  //   strokeWeight(config.strokeWeight);
+  //   stroke(255);
+  //   let r = center.r;
+  //   while (r > 0) {
+  //     circle(center.x, center.y, r * 2);
+  //     r -= 0.01 * height;
+  //   }
+  // });
 }
 
 //=================Record=============================
