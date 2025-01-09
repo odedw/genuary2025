@@ -71,7 +71,6 @@ class CircleSegment {
 
 //=================Variables=============================
 
-let lfo1;
 let center;
 let upperSegments = [];
 let lowerSegments = [];
@@ -80,13 +79,15 @@ let currentUpperXs = [];
 let currentLowerXs = [];
 //=================Setup=============================
 
-function generateUpperSegment(segmentRow) {
+function generateSegment(segmentRow, yOffset, arcStartAngle, arcEndAngle) {
   let newSegmentRow = [];
-  let y = segmentRow[0].y - config.yDelta;
+  let y = segmentRow[0].y + yOffset;
   let x = 0;
+
   for (let i = 0; i < segmentRow.length; i++) {
     const segment = segmentRow[i];
     let newSegment;
+
     if (segment instanceof LineSegment) {
       let endX = segment.endX - config.xDelta * 2;
       newSegment = new LineSegment(x, endX, y);
@@ -94,56 +95,33 @@ function generateUpperSegment(segmentRow) {
     } else if (segment instanceof CircleSegment) {
       let r = segment.r + config.xDelta * 2;
       let endX = x + r * 2;
-      newSegment = new CircleSegment(x, r, y, PI, TAU);
+      newSegment = new CircleSegment(x, r, y, arcStartAngle, arcEndAngle);
       x = endX;
     }
     newSegmentRow.push(newSegment);
   }
+
   if (x < width) {
     newSegmentRow.push(new LineSegment(x, width, y));
   }
   return newSegmentRow;
+}
+
+function generateUpperSegment(segmentRow) {
+  return generateSegment(segmentRow, -config.yDelta, PI, TAU);
 }
 
 function generateLowerSegment(segmentRow) {
-  let newSegmentRow = [];
-  let y = segmentRow[0].y + config.yDelta;
-  let x = 0;
-  for (let i = 0; i < segmentRow.length; i++) {
-    const segment = segmentRow[i];
-    let newSegment;
-    if (segment instanceof LineSegment) {
-      let endX = segment.endX - config.xDelta * 2;
-      newSegment = new LineSegment(x, endX, y);
-      x = endX;
-    } else if (segment instanceof CircleSegment) {
-      let r = segment.r + config.xDelta * 2;
-      let endX = x + r * 2;
-      newSegment = new CircleSegment(x, r, y, 0, PI);
-      x = endX;
-    }
-    newSegmentRow.push(newSegment);
-  }
-  if (x < width) {
-    newSegmentRow.push(new LineSegment(x, width, y));
-  }
-  return newSegmentRow;
+  return generateSegment(segmentRow, config.yDelta, 0, PI);
 }
 
-function setup() {
-  createCanvas(config.width, config.height);
-  frameRate(config.fps);
-  stroke(255);
-  noFill();
-  rectMode(CENTER);
-  center = createVector(width / 2, height / 2);
-
-  lfo1 = createLfo({
-    waveform: LfoWaveform.Sine,
-    frequency: Timing.frames(120),
-    min: -PI,
-    max: PI,
-  });
+function reset() {
+  randomPalette();
+  upperSegments = [];
+  lowerSegments = [];
+  circleCenters = [];
+  currentUpperXs = [];
+  currentLowerXs = [];
 
   let x = 0;
   let segmentKind = 0;
@@ -207,8 +185,49 @@ function setup() {
     color: random(PALETTE),
   }));
 }
+function setup() {
+  createCanvas(config.width, config.height);
+  frameRate(config.fps);
+  stroke(255);
+  noFill();
+  rectMode(CENTER);
+  center = createVector(width / 2, height / 2);
+  reset();
+}
 
 //=================Draw=============================
+
+function drawSegmentRow(segments, currentX, color) {
+  fill(color);
+  if (startFrame < currentX.delay) {
+    return;
+  }
+
+  for (let i = 0; i < currentX.speed; i++) {
+    if (currentX.current >= width) {
+      break;
+    }
+
+    let segmentIndex =
+      segments.findIndex((segment) => segment.startX > currentX.current) - 1;
+    if (segmentIndex === -2) {
+      segmentIndex = segments.length - 1;
+    }
+
+    const segment = segments[segmentIndex];
+    if (segment instanceof LineSegment) {
+      square(currentX.current, segment.y, 2);
+    } else if (segment instanceof CircleSegment) {
+      const a = segment.startX + segment.r - currentX.current;
+      const y = sqrt(segment.r * segment.r - a * a);
+      const yOffset = segment.startAngle === PI ? -y : y;
+      square(currentX.current, segment.y + yOffset, 2);
+    }
+    currentX.current++;
+  }
+}
+
+let startFrame = 0;
 
 function draw() {
   if (config.record.shouldRecord && frameCount === 1) {
@@ -220,80 +239,28 @@ function draw() {
   // background(0);
   noStroke();
   for (let i = 0; i < currentUpperXs.length; i++) {
-    const currentUpperX = currentUpperXs[i];
-    fill(currentUpperX.color);
-    if (frameCount < currentUpperX.delay) {
-      continue;
-    }
-    const segments = upperSegments[i];
-    for (let i = 0; i < currentUpperX.speed; i++) {
-      if (currentUpperX.current >= width) {
-        break;
-      }
-
-      // find the segment that contains the currentUpperX.current
-      let segmentIndex =
-        segments.findIndex(
-          (segment) => segment.startX > currentUpperX.current
-        ) - 1;
-      if (segmentIndex === -2) {
-        segmentIndex = segments.length - 1;
-      }
-      const segment = segments[segmentIndex];
-      if (segment instanceof LineSegment) {
-        square(currentUpperX.current, segment.y, 2);
-      } else if (segment instanceof CircleSegment) {
-        // find the y at point currentUpperX.current
-        const a = segment.startX + segment.r - currentUpperX.current;
-        const y = sqrt(segment.r * segment.r - a * a);
-        square(currentUpperX.current, segment.y - y, 2);
-      }
-      currentUpperX.current++;
-    }
+    drawSegmentRow(
+      upperSegments[i],
+      currentUpperXs[i],
+      currentUpperXs[i].color
+    );
   }
 
   for (let i = 0; i < lowerSegments.length; i++) {
-    const currentLowerX = currentLowerXs[i];
-    fill(currentLowerX.color);
-    if (frameCount < currentLowerX.delay) {
-      continue;
-    }
-    const segments = lowerSegments[i];
-    for (let i = 0; i < currentLowerX.speed; i++) {
-      if (currentLowerX.current >= width) {
-        break;
-      }
-
-      // find the segment that contains the currentLowerX.current
-      let segmentIndex =
-        segments.findIndex(
-          (segment) => segment.startX > currentLowerX.current
-        ) - 1;
-      if (segmentIndex === -2) {
-        segmentIndex = segments.length - 1;
-      }
-      const segment = segments[segmentIndex];
-      if (segment instanceof LineSegment) {
-        square(currentLowerX.current, segment.y, 2);
-      } else if (segment instanceof CircleSegment) {
-        // find the y at point currentLowerX.current
-        const a = segment.startX + segment.r - currentLowerX.current;
-        const y = sqrt(segment.r * segment.r - a * a);
-        square(currentLowerX.current, segment.y + y, 2);
-      }
-      currentLowerX.current++;
-    }
+    drawSegmentRow(
+      lowerSegments[i],
+      currentLowerXs[i],
+      currentLowerXs[i].color
+    );
   }
-  // circleCenters.forEach((center) => {
-  // circleCenters.forEach((center) => {
-  //   strokeWeight(config.strokeWeight);
-  //   stroke(255);
-  //   let r = center.r;
-  //   while (r > 0) {
-  //     circle(center.x, center.y, r * 2);
-  //     r -= 0.01 * height;
-  //   }
-  // });
+
+  if (startFrame === 520) {
+    background(0);
+    reset();
+    startFrame = 0;
+  } else {
+    startFrame++;
+  }
 }
 
 //=================Record=============================

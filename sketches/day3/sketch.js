@@ -40,3 +40,18 @@ function draw() {
   background(0) && cells.forEach((cell) => cell.draw());
   for (let i = particles.length - 1; i >= 0; i--) if (!particles[i].update()) particles.splice(i, 1);
 }
+
+if (config.record.shouldRecord) {
+  P5Capture.setDefaultOptions({
+    format: "mp4",
+    framerate: 60,
+    quality: 1,
+    bitrate: 1000000,
+    width: config.width,
+    height: config.height,
+  });
+} else {
+  P5Capture.setDefaultOptions({
+    disableUi: true,
+  });
+}

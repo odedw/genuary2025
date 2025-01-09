@@ -10,7 +10,7 @@ const config = {
     max: 200,
   },
   record: {
-    shouldRecord: true,
+    shouldRecord: false,
     duration: 60 * 15,
   },
   lfoDuration: [1200],
@@ -21,7 +21,7 @@ const config = {
 };
 
 // setPalette("Flat");
-setPalette2("Brutalist");
+randomPalette();
 
 const numberOfColors = PALETTE.length;
 
