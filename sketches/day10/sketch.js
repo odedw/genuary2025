@@ -7,12 +7,14 @@ const config = {
   height: 700,
   fps: 60,
   strokeWeight: 2,
+  yDelta: 10,
+  xDelta: 1,
   lineWidth: {
-    min: 10,
+    min: 100,
     max: 100,
   },
   radius: {
-    min: 5,
+    min: 10,
     max: 100,
   },
   record: {
@@ -63,9 +65,60 @@ class CircleSegment {
 
 let lfo1;
 let center;
-let segments = [];
+let upperSegments = [];
+let lowerSegments = [];
 let circleCenters = [];
 //=================Setup=============================
+
+function generateUpperSegment(segmentRow) {
+  let newSegmentRow = [];
+  let y = segmentRow[0].y - config.yDelta;
+  let x = 0;
+  for (let i = 0; i < segmentRow.length; i++) {
+    const segment = segmentRow[i];
+    let newSegment;
+    if (segment instanceof LineSegment) {
+      let endX = segment.endX - config.xDelta * 2;
+      newSegment = new LineSegment(x, endX, y);
+      x = endX;
+    } else if (segment instanceof CircleSegment) {
+      let r = segment.r + config.xDelta * 2;
+      let endX = x + r * 2;
+      newSegment = new CircleSegment(x, r, y, PI, TAU);
+      x = endX;
+    }
+    newSegmentRow.push(newSegment);
+  }
+  if (x < width) {
+    newSegmentRow.push(new LineSegment(x, width, y));
+  }
+  return newSegmentRow;
+}
+
+function generateLowerSegment(segmentRow) {
+  let newSegmentRow = [];
+  let y = segmentRow[0].y + config.yDelta;
+  let x = 0;
+  for (let i = 0; i < segmentRow.length; i++) {
+    const segment = segmentRow[i];
+    let newSegment;
+    if (segment instanceof LineSegment) {
+      let endX = segment.endX - config.xDelta * 2;
+      newSegment = new LineSegment(x, endX, y);
+      x = endX;
+    } else if (segment instanceof CircleSegment) {
+      let r = segment.r + config.xDelta * 2;
+      let endX = x + r * 2;
+      newSegment = new CircleSegment(x, r, y, 0, PI);
+      x = endX;
+    }
+    newSegmentRow.push(newSegment);
+  }
+  if (x < width) {
+    newSegmentRow.push(new LineSegment(x, width, y));
+  }
+  return newSegmentRow;
+}
 
 function setup() {
   createCanvas(config.width, config.height);
@@ -86,22 +139,15 @@ function setup() {
   let segmentKind = 0;
   let upperY = height * 0.495;
   let lowerY = height * 0.505;
+  const upperSegmentRow = [];
+  const lowerSegmentRow = [];
   while (x < width) {
-    segmentKind = segmentKind == 1 ? 0 : 1;
+    segmentKind = x == 0 || segmentKind == 1 ? 0 : 1;
     if (segmentKind === 0) {
       const w = random(config.lineWidth.min, config.lineWidth.max);
-      segments.push(new LineSegment(x, x + w, upperY));
-      segments.push(new LineSegment(x, x + w, lowerY));
-      let y = upperY;
-      while (y > 0) {
-        segments.push(new LineSegment(x, x + w, y));
-        y -= 0.01 * height;
-      }
-      y = lowerY;
-      while (y < height) {
-        segments.push(new LineSegment(x, x + w, y));
-        y += 0.01 * height;
-      }
+      upperSegmentRow.push(new LineSegment(x, x + w, upperY));
+      lowerSegmentRow.push(new LineSegment(x, x + w, lowerY));
+
       x += w;
     } else {
       const r = random(config.radius.min, config.radius.max);
@@ -113,21 +159,29 @@ function setup() {
         y: center.y,
         r,
       });
-      segments.push(new CircleSegment(x, r, upperY, PI, TAU));
-      segments.push(new CircleSegment(x, r, lowerY, 0, PI));
-      let y = upperY;
-      while (y > 0) {
-        segments.push(new CircleSegment(x, r, y, PI, TAU));
-        y -= 0.01 * height;
-      }
-      y = lowerY;
-      while (y < height) {
-        segments.push(new CircleSegment(x, r, y, 0, PI));
-        y += 0.01 * height;
-      }
+      upperSegmentRow.push(new CircleSegment(x, r, upperY, PI, TAU));
+      lowerSegmentRow.push(new CircleSegment(x, r, lowerY, 0, PI));
       x += r * 2;
     }
   }
+  upperSegments.push(upperSegmentRow);
+  lowerSegments.push(lowerSegmentRow);
+  let y = upperSegmentRow[0].y;
+  let lastSegmentRow = upperSegmentRow;
+  while (y > 0) {
+    const newSegmentRow = generateUpperSegment(lastSegmentRow);
+    upperSegments.push(newSegmentRow);
+    lastSegmentRow = newSegmentRow;
+    y = newSegmentRow[0].y;
+  }
+  lastSegmentRow = lowerSegmentRow;
+  while (y < height) {
+    const newSegmentRow = generateLowerSegment(lastSegmentRow);
+    lowerSegments.push(newSegmentRow);
+    lastSegmentRow = newSegmentRow;
+    y = newSegmentRow[0].y;
+  }
+
   // segments.push(new CircleSegment(200, ))
   //   background(0);
 }
@@ -142,7 +196,12 @@ function draw() {
     });
   }
   background(0);
-  segments.forEach((segment) => segment.draw());
+  upperSegments.forEach((segmentRow) => {
+    segmentRow.forEach((segment) => segment.draw());
+  });
+  lowerSegments.forEach((segmentRow) => {
+    segmentRow.forEach((segment) => segment.draw());
+  });
   circleCenters.forEach((center) => {
     strokeWeight(config.strokeWeight);
     stroke(255);
