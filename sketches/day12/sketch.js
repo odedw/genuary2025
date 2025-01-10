@@ -6,12 +6,12 @@ const config = {
   width: 800,
   height: 800,
   fps: 30,
-  numberOfArcs: 15,
+  numberOfArcs: 14,
   numberOfSwitches: 30,
-  radius: 450,
+  radius: 550,
   record: {
     shouldRecord: false,
-    duration: 60,
+    duration: 30,
   },
 };
 //=================Shaders=============================
@@ -95,51 +95,49 @@ function setup() {
     }
   }
 
-  // Now perform the arc swaps
-  for (let i = 0; i < config.numberOfSwitches; i++) {
-    const arc1 = int(random(config.numberOfArcs));
-    const arc2 = int(random(config.numberOfArcs));
+  // Create and shuffle the array of arc indices ensuring no element stays in place
+  let arcIndices;
+  do {
+    arcIndices = Array.from({ length: config.numberOfArcs }, (_, i) => i);
+    for (let i = arcIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [arcIndices[i], arcIndices[j]] = [arcIndices[j], arcIndices[i]];
+    }
+  } while (arcIndices.some((val, idx) => val === idx));
 
-    for (let x = 0; x < width; x++) {
-      for (let y = 0; y < height; y++) {
-        const distFromCenter = dist(x, y, width / 2, height / 2);
-        if (distFromCenter > config.radius) continue;
+  // Create a mapping array for quick lookups
+  const reverseMapping = new Array(config.numberOfArcs);
+  for (let i = 0; i < config.numberOfArcs; i++) {
+    reverseMapping[arcIndices[i]] = i;
+  }
 
-        // Calculate angle (0 to TWO_PI)
-        let angle = atan2(y - height / 2, x - width / 2);
-        if (angle < 0) angle += TWO_PI;
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      const distFromCenter = dist(x, y, width / 2, height / 2);
+      if (distFromCenter > config.radius) continue;
 
-        // Calculate arc boundaries
-        const arcSize = TWO_PI / config.numberOfArcs;
-        const arc1Start = arc1 * arcSize;
-        const arc1End = (arc1 + 1) * arcSize;
-        const arc2Start = arc2 * arcSize;
-        const arc2End = (arc2 + 1) * arcSize;
+      // Calculate angle (0 to TWO_PI)
+      let angle = atan2(y - height / 2, x - width / 2);
+      if (angle < 0) angle += TWO_PI;
 
-        const pixelIndex = (x + y * width) * 4;
+      // Calculate which arc this pixel belongs to
+      const arcSize = TWO_PI / config.numberOfArcs;
+      const currentArc = floor(angle / arcSize);
 
-        if (angle >= arc1Start && angle < arc1End) {
-          // Map from arc1 to arc2
-          const relativeAngle = (angle - arc1Start) / arcSize;
-          const newAngle = arc2Start + relativeAngle * arcSize;
+      // Get the target arc from our mapping
+      const targetArc = arcIndices[currentArc];
 
-          const newX = width / 2 + cos(newAngle) * distFromCenter;
-          const newY = height / 2 + sin(newAngle) * distFromCenter;
+      const pixelIndex = (x + y * width) * 4;
 
-          coordsTexture.pixels[pixelIndex] = (newX / width) * 255;
-          coordsTexture.pixels[pixelIndex + 1] = (newY / height) * 255;
-        } else if (angle >= arc2Start && angle < arc2End) {
-          // Map from arc2 to arc1
-          const relativeAngle = (angle - arc2Start) / arcSize;
-          const newAngle = arc1Start + relativeAngle * arcSize;
+      // Calculate relative position within the arc
+      const relativeAngle = (angle - currentArc * arcSize) / arcSize;
+      const newAngle = targetArc * arcSize + relativeAngle * arcSize;
 
-          const newX = width / 2 + cos(newAngle) * distFromCenter;
-          const newY = height / 2 + sin(newAngle) * distFromCenter;
+      const newX = width / 2 + cos(newAngle) * distFromCenter;
+      const newY = height / 2 + sin(newAngle) * distFromCenter;
 
-          coordsTexture.pixels[pixelIndex] = (newX / width) * 255;
-          coordsTexture.pixels[pixelIndex + 1] = (newY / height) * 255;
-        }
-      }
+      coordsTexture.pixels[pixelIndex] = (newX / width) * 255;
+      coordsTexture.pixels[pixelIndex + 1] = (newY / height) * 255;
     }
   }
 
