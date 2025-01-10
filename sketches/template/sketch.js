@@ -58,6 +58,7 @@ let isLooping = true;
 function mouseClicked() {
   isLooping = !isLooping;
   isLooping ? loop() : noLoop();
+  console.log(frameCount);
 }
 
 if (config.record.shouldRecord) {
